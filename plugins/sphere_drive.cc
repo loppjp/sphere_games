@@ -86,7 +86,7 @@ namespace gazebo
     /// angle of the Sphere.
     public: void OnRosMsgHeading(const std_msgs::Float32::ConstPtr& _msg)
     {
-      this->yaw = (this->yaw + _msg->data * M_PI / 180) % 360;
+      this->yaw = this->yaw + _msg->data * M_PI / 180;
       std::cerr << "\n[" << model->GetName() << "] heading adjusted by " << 
         _msg->data << "degrees. New heading is " << this->yaw << "\n";
       // Since we are using angular.x and angular.y for motion, just 
