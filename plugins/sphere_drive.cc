@@ -49,10 +49,10 @@ namespace gazebo
             ros::VoidPtr(), &this->rosQueue);
       this->rosSubTwist = this->rosNode->subscribe(so_twist);
       
-      // Create a named topic for heading, and subscribe to it.
+      // Create a named topic for setting heading, and subscribe to it.
       ros::SubscribeOptions so_heading =
         ros::SubscribeOptions::create<std_msgs::Float32>(
-            "/" + this->model->GetName() + "/cmd_heading",
+            "/" + this->model->GetName() + "/set_heading",
             1,
             boost::bind(&SphereDrive::OnRosMsgHeading, this, _1),
             ros::VoidPtr(), &this->rosQueue);
@@ -86,9 +86,9 @@ namespace gazebo
     /// angle of the Sphere.
     public: void OnRosMsgHeading(const std_msgs::Float32::ConstPtr& _msg)
     {
-      std::cerr << "\n[" << model->GetName() << "] heading set to " << 
-        _msg->data << "\n";
-      this->yaw = _msg->data * M_PI / 180;
+      this->yaw = (this->yaw + _msg->data * M_PI / 180) % 360;
+      std::cerr << "\n[" << model->GetName() << "] heading adjusted by " << 
+        _msg->data << "degrees. New heading is " << this->yaw << "\n";
       // Since we are using angular.x and angular.y for motion, just 
       // store the heading update internally in yaw.
     }
