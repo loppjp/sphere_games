@@ -1,8 +1,13 @@
+#define _USE_MATH_DEFINES
+#define RAND_MAX 360
 #include <thread>
+#include <cstdlib>
+#include "math.h"
 #include "ros/ros.h"
 #include "ros/callback_queue.h"
 #include "ros/subscribe_options.h"
 #include "geometry_msgs/Twist.h"
+#include "std_msgs/Float32.h"
 
 #include <functional>
 #include <gazebo/gazebo.hh>
@@ -38,11 +43,20 @@ namespace gazebo
       // Create a named topic for twist, and subscribe to it.
       ros::SubscribeOptions so_twist =
         ros::SubscribeOptions::create<geometry_msgs::Twist>(
-            "/" + this->model->GetName() + "/twist_cmd",
+            "/" + this->model->GetName() + "/cmd_vel",
             1,
             boost::bind(&SphereDrive::OnRosMsgTwist, this, _1),
             ros::VoidPtr(), &this->rosQueue);
       this->rosSubTwist = this->rosNode->subscribe(so_twist);
+      
+      // Create a named topic for setting heading, and subscribe to it.
+      ros::SubscribeOptions so_heading =
+        ros::SubscribeOptions::create<std_msgs::Float32>(
+            "/" + this->model->GetName() + "/set_heading",
+            1,
+            boost::bind(&SphereDrive::OnRosMsgHeading, this, _1),
+            ros::VoidPtr(), &this->rosQueue);
+      this->rosSubHeading = this->rosNode->subscribe(so_heading);
       
       // Spin up the queue helper thread.
       this->rosQueueThread =
@@ -54,10 +68,29 @@ namespace gazebo
     /// velocity of the Sphere.
     public: void OnRosMsgTwist(const geometry_msgs::Twist::ConstPtr& _msg)
     {
+      // Get message information
+      double x_vel = _msg->angular.x;
+      double y_vel = _msg->angular.y;
       std::cerr << "\n[" << model->GetName() << "] vel[x, y] set to " << 
-        _msg->angular.x << ", " << _msg->angular.y << "\n";
-      this->model->SetAngularVel(ignition::math::Vector3d(_msg->angular.x, 
-        _msg->angular.y, 0)); 
+        x_vel << ", " << y_vel << "\n";
+      // Adjust x and y velocities based on heading (yaw)
+      x_vel = x_vel * cos(this->yaw) - y_vel * sin(this->yaw);
+      y_vel = y_vel * cos(this->yaw) + x_vel * sin(this->yaw);
+      this->model->SetAngularVel(ignition::math::Vector3d(x_vel, y_vel, 0)); 
+      // this->model->SetAngularVel(ignition::math::Vector3d(_msg->angular.x, 
+      //                           _msg->angular.y, 0));
+    }
+    
+    /// \brief Handle an incoming message from ROS
+    /// \param[in] _msg A Float32 message that is used to set the heading 
+    /// angle of the Sphere.
+    public: void OnRosMsgHeading(const std_msgs::Float32::ConstPtr& _msg)
+    {
+      this->yaw = this->yaw + _msg->data * M_PI / 180;
+      std::cerr << "\n[" << model->GetName() << "] heading adjusted by " << 
+        _msg->data << "degrees. New heading is " << this->yaw << "\n";
+      // Since we are using angular.x and angular.y for motion, just 
+      // store the heading update internally in yaw.
     }
     
     /// \brief ROS helper function that processes messages
@@ -70,8 +103,8 @@ namespace gazebo
       }
     }
 
-    // Current yaw
-    private: double yaw;
+    // Initialize yaw to a random heading
+    private: double yaw = rand() * M_PI / 180;
 
     // Pointer to the model
     private: physics::ModelPtr model;
@@ -84,6 +117,9 @@ namespace gazebo
     
     /// \brief A ROS subscriber for twist
     private: ros::Subscriber rosSubTwist;
+    
+    /// \brief A ROS subscriber for heading
+    private: ros::Subscriber rosSubHeading;
     
     /// \brief A ROS callbackqueue that helps process messages
     private: ros::CallbackQueue rosQueue;
