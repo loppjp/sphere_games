@@ -6,7 +6,7 @@ import cv2
 
 from std_msgs.msg import Bool, Int16
 from sensor_msgs.msg import CompressedImage
-from geometry_msgs.msg import Point, Vector3
+from geometry_msgs.msg import Point, PointStamped, Vector3
 
 # Capture the Flag base configuration
 print("Starting Capture the Flag")
@@ -156,24 +156,33 @@ def host():
 def pub_sub_init():
     global red_center, blue_center, red_flag, blue_flag, red_score, blue_score
 
-    pub_red_odom = rospy.Publisher('/red_sphero/odometry', Point, queue_size=1)
-    pub_blue_odom = rospy.Publisher('/blue_sphero/odometry', Point, queue_size=1)
-    pub_red_collision = rospy.Publisher('/red_sphero/collision', Bool, queue_size=1)
-    pub_blue_collision = rospy.Publisher('/blue_sphero/collision', Bool, queue_size=1)
-    pub_red_accel = rospy.Publisher('/red_sphero/accel', Vector3, queue_size=1)
-    pub_blue_accel = rospy.Publisher('/blue_sphero/accel', Vector3, queue_size=1)
-    pub_red_center = rospy.Publisher('/arena/red_sphero/position', Point, queue_size=1)
-    pub_blue_center = rospy.Publisher('/arena/blue_sphero/position', Point, queue_size=1)
-    pub_red_pos_mm = rospy.Publisher('/arena/red_sphero/position_mm', Point, queue_size=1)
-    pub_blue_pos_mm = rospy.Publisher('/arena/blue_sphero/position_mm', Point, queue_size=1)
-    pub_red_base = rospy.Publisher('/arena/red_sphero/base', Point, queue_size=1)
-    pub_blue_base = rospy.Publisher('/arena/blue_sphero/base', Point, queue_size=1)
-    pub_red_flag = rospy.Publisher('/arena/red_sphero/flag', Bool, queue_size=1)
-    pub_blue_flag = rospy.Publisher('/arena/blue_sphero/flag', Bool, queue_size=1)
-    pub_red_score = rospy.Publisher('/arena/red_sphero/score', Int16, queue_size=1)
-    pub_blue_score = rospy.Publisher('/arena/blue_sphero/score', Int16, queue_size=1)
+    # Blue Team
+    pub_blue_odom      = rospy.Publisher('/blue_sphero/odometry', PointStamped, queue_size=1)
+    pub_blue_collision = rospy.Publisher('/blue_sphero/velocity', PointStamped, queue_size=1)
+    pub_blue_accel     = rospy.Publisher('/blue_sphero/accel', Int16, queue_size=1)
 
-    pub_game_state = rospy.Publisher('/arena/game_state', Int16, queue_size=1)
+    pub_blue_center  = rospy.Publisher('/arena/blue_sphero/center', Point, queue_size=1)
+    pub_blue_pos_mm  = rospy.Publisher('/arena/blue_sphero/center_mm', PointStamped, queue_size=1)
+    pub_blue_base    = rospy.Publisher('/arena/blue_sphero/base', Point, queue_size=1)
+    pub_blue_base_mm = rospy.Publisher('/arena/blue_sphero/base_mm', Point, queue_size=1)
+    pub_blue_flag    = rospy.Publisher('/arena/blue_sphero/flag', Bool, queue_size=1)
+    pub_blue_score   = rospy.Publisher('/arena/blue_sphero/score', Int16, queue_size=1)
+
+    # Red Team
+    pub_red_odom      = rospy.Publisher('/red_sphero/odometry', PointStamped, queue_size=1)
+    pub_red_collision = rospy.Publisher('/red_sphero/velocity', PointStamped, queue_size=1)
+    pub_red_accel     = rospy.Publisher('/red_sphero/accel', Int16, queue_size=1)
+
+    pub_red_center = rospy.Publisher('/arena/red_sphero/center', Point, queue_size=1)
+    pub_red_pos_mm = rospy.Publisher('/arena/red_sphero/center_mm', PointStamped, queue_size=1)
+    pub_red_base   = rospy.Publisher('/arena/red_sphero/base', Point, queue_size=1)
+    pub_red_base_mm = rospy.Publisher('/arena/blue_sphero/base_mm', Point, queue_size=1)
+    pub_red_flag   = rospy.Publisher('/arena/red_sphero/flag', Bool, queue_size=1)
+    pub_red_score  = rospy.Publisher('/arena/red_sphero/score', Int16, queue_size=1)
+
+    # General Arena Info
+    pub_game_state   = rospy.Publisher('/arena/game_state', Int16, queue_size=1)
+    pub_time_elapsed = rospy.Publisher('/arena/time_elapsed', Int16, queue_size=1)
 
     sub_image = rospy.Subscriber('/camera/rgb/image_raw/compressed', CompressedImage, receive_image, queue_size=1)
 
