@@ -2,9 +2,6 @@
 
 pushd "$(dirname "$0")"
 
-# Shutdown all instances if they aren't already stopped
-setup_arena.sh
-
 source ~/python2_env/bin/activate
 
 export ROS_MASTER_URI="http://192.168.42.100:11311"

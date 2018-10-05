@@ -13,7 +13,7 @@ from geometry_msgs.msg import Point, PointStamped
 
 from cv_bridge import CvBridge
 
-class sphero_tracker_subtraction():
+class SpheroTracker():
     '''
     Updated Tracker for Spheros
     '''
@@ -65,6 +65,8 @@ class sphero_tracker_subtraction():
         self.blur_level = 25
 
         self.bridge = CvBridge()
+
+        self.running_average = {}
 
         version = cv2.__version__.split('.')
 
@@ -268,6 +270,47 @@ class sphero_tracker_subtraction():
 
         return masked_img
 
+
+    def filter(self, color, pt):
+        '''
+        Reject any value that is too far away from recent average values
+        :param color:
+        :param pt:
+        :return:
+        '''
+
+        if(pt is None):
+            return None
+
+        # Set running average if not set to new point
+        if(not color in self.running_average.keys() or self.running_average[color] is None):
+            self.running_average[color] = pt
+
+        avg = self.running_average[color]
+
+        dist = utilities.calculate_distance(avg, pt)
+
+        if(dist < constants.FILTER_THRESHOLD):
+            avg.x = avg.x * .8 + pt.x * .2
+            avg.y = avg.x * .8 + pt.x * .2
+
+            return pt
+        else:
+            return avg
+
+    def update_locations(self, blue_pt, red_pt, stamp):
+
+        # Return Sphero locations
+        if(not red_pt is None):
+            red_pt = self.filter('red', red_pt)
+            self.center['red'] = red_pt
+            self.red_center_mm = self.convert_pixels_mm(red_pt, stamp)
+
+        if (not blue_pt is None):
+            blue_pt = self.filter('blue', red_pt)
+            self.center['blue'] = blue_pt
+            self.blue_center_mm = self.convert_pixels_mm(blue_pt, stamp)
+
     def process_frame(self, image_data):
         '''
         Take a specific image and identify sphero locations
@@ -291,14 +334,7 @@ class sphero_tracker_subtraction():
         # Do Processing
         spheros = self.get_spheros(masked_img)
 
-        # Return Sphero locations
-        if(not spheros['red'] is None):
-            self.center['red'] = spheros['red']
-            self.red_center_mm = self.convert_pixels_mm(spheros['red'], stamp)
-
-        if (not spheros['blue'] is None):
-            self.center['blue'] = spheros['blue']
-            self.blue_center_mm = self.convert_pixels_mm(spheros['blue'], stamp)
+        self.update_locations(spheros['blue'], spheros['red'], stamp)
 
     # Scoring logic
     def update_scoring(self):
@@ -400,6 +436,6 @@ class sphero_tracker_subtraction():
 
 
 if(__name__ == "__main__"):
-    t = sphero_tracker_subtraction()
+    t = SpheroTracker()
     t.init_publishers()
     t.start_tracking()
