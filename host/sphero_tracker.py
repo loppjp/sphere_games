@@ -66,7 +66,10 @@ class SpheroTracker():
 
         self.bridge = CvBridge()
 
+        # Filter Details
         self.running_average = {}
+        self.last_good_value = {}
+        self.reset_filter_count = {}
 
         version = cv2.__version__.split('.')
 
@@ -285,6 +288,7 @@ class SpheroTracker():
         # Set running average if not set to new point
         if(not color in self.running_average.keys() or self.running_average[color] is None):
             self.running_average[color] = pt
+            self.last_good_value[color] = pt
 
         avg = self.running_average[color]
 
@@ -294,9 +298,20 @@ class SpheroTracker():
             avg.x = avg.x * .8 + pt.x * .2
             avg.y = avg.x * .8 + pt.x * .2
 
+            self.last_good_value[color] = pt
+            self.reset_filter_count[color] = 0
+
             return pt
         else:
-            return avg
+            self.reset_filter_count[color] = self.reset_filter_count[color] + 1
+
+            if(self.reset_filter_count[color] > 10):
+                self.last_good_value[color] = pt
+                self.reset_filter_count[color] = 0
+                self.running_average[color] = pt
+                return pt
+
+            return self.last_good_value[color]
 
     def update_locations(self, blue_pt, red_pt, stamp):
 
