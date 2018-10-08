@@ -144,8 +144,9 @@ class simple_agent(object):
                     start_msg_shown = False
                     game_start_msg_shown = True
                     game_end_msg_shown = False
-                self.go_to_position(self.their_base, self.their_base_px, self.end_early)
-                self.go_to_position(self.my_base, self.my_base_px, self.end_early)
+
+                self.go_to_their_base()
+                self.go_to_my_base()
             elif(self.game_state == 2): # Game Over
                 if (not game_end_msg_shown):
                     print("Game Ended")
@@ -159,10 +160,55 @@ class simple_agent(object):
                     start_msg_shown = False
                     game_start_msg_shown = True
                     game_end_msg_shown = False
-                self.go_to_position(self.their_base, self.their_base_px, self.end_early)
-                self.go_to_position(self.my_base, self.my_base_px, self.end_early)
+                self.go_to_their_base()
+                self.go_to_my_base()
 
             rate.sleep()
+
+    def go_to_my_base(self):
+
+        my_base = self.my_base
+        my_base_px = self.my_base_px
+        my_base = self.my_base
+
+        p1 = Point(0,-300, 0)
+        p1_px = util.mm_2_pixel(p1)
+
+        p2 = Point(300, 0, 0)
+        p2_px = util.mm_2_pixel(p2)
+
+        if(my_base.x > my_base.x):
+            self.go_to_position(p1, p1_px, self.end_early)
+            self.go_to_position(p2, p2_px, self.end_early)
+
+        else:
+            self.go_to_position(p2, p2_px, self.end_early)
+            self.go_to_position(p1, p1_px, self.end_early)
+
+        self.go_to_position(my_base, my_base_px, self.end_early)
+
+
+    def go_to_their_base(self):
+
+        their_base = self.their_base
+        their_base_px = self.their_base_px
+        my_base = self.my_base
+
+        p1 = Point(0,-400, 0)
+        p1_px = util.mm_2_pixel(p1)
+
+        p2 = Point(400, 0, 0)
+        p2_px = util.mm_2_pixel(p2)
+
+        if(their_base.x > my_base.x):
+            self.go_to_position(p1, p1_px, self.end_early)
+            self.go_to_position(p2, p2_px, self.end_early)
+
+        else:
+            self.go_to_position(p2, p2_px, self.end_early)
+            self.go_to_position(p1, p1_px, self.end_early)
+
+        self.go_to_position(their_base, their_base_px, self.end_early)
 
     def go_to_position(self, target, target_px, monitor_function, have_flag = False, allowed_error = 20, dwell_time = 2):
         '''
@@ -201,12 +247,10 @@ class simple_agent(object):
                 rate.sleep()
                 continue
 
-            #print("Current Error: distance: " + str(linear_error) + " angle: "+str(err_heading))
-
             if(np.abs(linear_error) < allowed_error):
                 accumulated_error = 0
                 if(not at_goal):
-                    print("Touched Goal")
+                    #print("Touched Goal")
                     t = Twist()
                     t.linear = Vector3(0, 0, 0)
                     t.angular = Vector3(0, 0, err_heading)
@@ -221,7 +265,7 @@ class simple_agent(object):
                         print("Found goal")
                         return
                     else:
-                        print("Close to goal")
+                        #print("Close to goal")
                         rate.sleep()
                         continue
             else:
@@ -249,6 +293,6 @@ if(__name__ == "__main__"):
 
     b.setup_ros()
 
-    b.test_game()
+    #b.test_game()
 
-    #b.play_game()
+    b.play_game()

@@ -31,19 +31,9 @@ class SpheroTracker():
         self.red_center_mm = empty_point
         self.blue_center_mm = empty_point
 
-        red_x = (self.base['red'].x - constants.ORIGIN_PIXELS.x) * constants.COVERT_PIXEL2MM
-        red_y = ((constants.PICTURE_SIZE[1] - self.base[
-            'red'].y) - constants.ORIGIN_PIXELS.y) * constants.COVERT_PIXEL2MM
-        red_z = (self.base['red'].z - constants.ORIGIN_PIXELS.z) * constants.COVERT_PIXEL2MM
+        self.red_base_mm = utilities.pixels_2_mm(self.base['red'])
 
-        blue_x = (self.base['blue'].x - constants.ORIGIN_PIXELS.x) * constants.COVERT_PIXEL2MM
-        blue_y = ((constants.PICTURE_SIZE[1] - self.base[
-            'blue'].y) - constants.ORIGIN_PIXELS.y) * constants.COVERT_PIXEL2MM
-        blue_z = (self.base['blue'].z - constants.ORIGIN_PIXELS.z) * constants.COVERT_PIXEL2MM
-
-        self.red_base_mm = Point(red_x, red_y, red_z)
-
-        self.blue_base_mm = Point(blue_x, blue_y, blue_z)
+        self.blue_base_mm = utilities.pixels_2_mm(self.base['blue'])
 
         # Who has a flag
         self.flag = {'red':False, 'blue' : False}
@@ -206,24 +196,47 @@ class SpheroTracker():
 
         return center
 
+    def get_average_intensity(self, img, circle):
+
+        new_img = img.copy()
+
+        circle_img = np.zeros(new_img.shape, np.uint8)
+        cv2.circle(circle_img, (circle[0], circle[1]), circle[2], 1, thickness=-1)
+
+        masked_data = cv2.bitwise_and(new_img, new_img, mask=circle_img)
+
+        (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(masked_data)
+
+        return maxVal
+
     def find_circles(self, mask):
         circles = cv2.HoughCircles(mask, cv2.HOUGH_GRADIENT, 1, 20,
-                                   param1 = 50, param2 = 10, minRadius = 0, maxRadius = 0)
+                                   param1 = 50, param2 = 8,
+                                   minRadius = 0, maxRadius = int(90*constants.COVERT_MM2PIXEL))
 
         if(circles is None):
             return None
+
+        maxVal = 0
+
+        pt = None
 
         for (x,y,r) in circles[0,:]:
             # Only accept point if within bounds of arena
             if (constants.ARENA_BOUNDS['left'] < x < constants.ARENA_BOUNDS['right']
               and constants.ARENA_BOUNDS['top'] < y < constants.ARENA_BOUNDS['bottom']):
-                return Point(x,y,0)
+
+                val = self.get_average_intensity(mask, (x,y,r))
+
+                if(val > maxVal):
+                    maxVal = val
+                    pt = Point(x,y,0)
             #else:
             #    print("Ignore %g,%g outside %g..%g, %g..%g" % 
             #        (x,y,self.bounds['left'],self.bounds['right'],
             #         self.bounds['top'],self.bounds['bottom']))
 
-        return None
+        return pt
 
     def get_spheros(self, cv2_image):
 
@@ -323,10 +336,11 @@ class SpheroTracker():
         else:
             self.reset_filter_count[color] = self.reset_filter_count[color] + 1
 
-            if(self.reset_filter_count[color] > 10):
+            if(self.reset_filter_count[color] > 5):
                 self.last_good_value[color] = pt
                 self.reset_filter_count[color] = 0
                 self.running_average[color] = pt
+                print("Reset Filter reference point " + color)
                 return pt
 
             return self.last_good_value[color]
@@ -379,41 +393,42 @@ class SpheroTracker():
 
         threshold = 100
         if self.flag['red'] != False:
-            distance = np.sqrt((self.center['red'].x - self.base['red'].x) ** 2 +
-                               (self.center['red'].y - self.base['red'].y) ** 2)
+            distance = utilities.calculate_distance(self.center['red'], self.base['red'])
+
             if distance < threshold:
                 red_at_home = True
         else:
-            distance = np.sqrt((self.center['red'].x - self.base['blue'].x) ** 2 +
-                               (self.center['red'].y - self.base['blue'].y) ** 2)
+            distance = utilities.calculate_distance(self.center['red'], self.base['blue'])
+
             if distance < threshold:
                 red_at_away = True
 
         if self.flag['blue'] != False:
-            distance = np.sqrt((self.center['blue'].x - self.base['blue'].x) ** 2 +
-                               (self.center['blue'].y - self.base['blue'].y) ** 2)
+            distance = utilities.calculate_distance(self.center['blue'], self.base['blue'])
+
             if distance < threshold:
                 blue_at_home = True
         else:
-            distance = np.sqrt((self.center['blue'].x - self.base['red'].x) ** 2 +
-                               (self.center['blue'].y - self.base['red'].y) ** 2)
+            distance = utilities.calculate_distance(self.center['blue'], self.base['red'])
+
             if distance < threshold:
                 blue_at_away = True
 
-        if red_at_home and blue_at_home:
+        # Scenarios
+        if red_at_home and blue_at_home: # Tie
             self.score['red'] += 1
             self.score['blue'] += 1
             self.flag['red'] = False
             self.flag['blue'] = False
-        elif red_at_home:
+        elif red_at_home: # Red Return
             self.score['red'] += 1
             self.flag['red'] = False
             self.flag['blue'] = False
-        elif blue_at_home:
+        elif blue_at_home: # Blue Return
             self.score['blue'] += 1
             self.flag['red'] = False
             self.flag['blue'] = False
-        else:
+        else: # Picked up flag
             if red_at_away:
                 self.flag['red'] = True
             if blue_at_away:

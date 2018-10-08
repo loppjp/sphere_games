@@ -155,18 +155,50 @@ def learning_agent():
     sub_red_base = rospy.Subscriber('/arena/red_sphero/base', Point, set_red_base, queue_size=1)
     sub_game_state = rospy.Subscriber('/arena/game_state', Int16, set_game_state, queue_size=1)
 
+    start_msg_shown = False
+    game_start_msg_shown = False
+    game_end_msg_shown = False
+
     # Agent control loop
     rate = rospy.Rate(5) # Hz
     while not rospy.is_shutdown():
 
-        Q_learning()
-        pub_red_cmd.publish(red_twist)
-        if game_state == 2:
-            break
+        if (game_state == 0):  # Waiting for game to start
+            if (not start_msg_shown):
+                print("Waiting for game to start...")
+
+                start_msg_shown = True
+                game_start_msg_shown = False
+                game_end_msg_shown = False
+            pass
+        elif (game_state == 1):  # Game Active
+            if (not game_start_msg_shown):
+                print("Starting Game...")
+                start_msg_shown = False
+                game_start_msg_shown = True
+                game_end_msg_shown = False
+
+            Q_learning()
+            pub_red_cmd.publish(red_twist)
+
+        elif (game_state == 2):  # Game Over
+            if (not game_end_msg_shown):
+                print("Game Ended")
+                start_msg_shown = False
+                game_start_msg_shown = False
+                game_end_msg_shown = True
+                np.save(agent_file, Q_table)
+                print("Game ended. Agent saved.")
+
+        elif (game_state == 3):  # Test Mode
+            if (not game_start_msg_shown):
+                print("Entering Test Mode...")
+                start_msg_shown = False
+                game_start_msg_shown = True
+                game_end_msg_shown = False
+
         rate.sleep()
 
-    np.save(agent_file, Q_table)
-    print("Game ended. Agent saved.")
     return
 
 if __name__ == '__main__':
