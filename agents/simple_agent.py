@@ -20,8 +20,13 @@ class simple_agent(object):
         self.flag = False
         self.game_state = None
         self.game_over = None
+
         self.my_base = None
         self.their_base = None
+
+        self.my_base_px = None
+        self.their_base_px = None
+
         self.last_position = None
         self.start_time = time.time()
 
@@ -48,6 +53,12 @@ class simple_agent(object):
 
     def set_their_base(self, base):
         self.their_base = base
+
+    def set_my_base_px(self, base):
+        self.my_base_px = base
+
+    def set_their_base_px(self, base):
+        self.their_base_px = base
 
     def set_game_state(self, state):
         self.game_state = int(state.data)
@@ -77,9 +88,12 @@ class simple_agent(object):
 
         self.sub_center       = rospy.Subscriber(arena_prefix + '/center_mm', PointStamped, self.set_arena_position, queue_size=1)
         self.sub_base         = rospy.Subscriber(arena_prefix + '/base_mm',   Point,        self.set_my_base, queue_size=1)
+        self.sub_base_pixels  = rospy.Subscriber(arena_prefix + '/base', Point, self.set_my_base_px, queue_size=1)
         self.sub_flag         = rospy.Subscriber(arena_prefix + '/flag',      Bool,         self.set_flag, queue_size=1)
 
-        self.sub_opponent_base = rospy.Subscriber('/arena/'+str(self.opponent) + '/base_mm', Point, self.set_their_base, queue_size=1)
+        self.sub_opponent_base   = rospy.Subscriber('/arena/'+str(self.opponent) + '/base_mm', Point, self.set_their_base, queue_size=1)
+        self.sub_opp_base_pixels = rospy.Subscriber('/arena/' + str(self.opponent) + '/base', Point,
+                                                  self.set_their_base_px, queue_size=1)
 
         self.sub_game_state    = rospy.Subscriber('/arena/game_state', Int16, self.set_game_state, queue_size=1)
 
@@ -97,8 +111,8 @@ class simple_agent(object):
                 rate.sleep()
                 continue
 
-            self.go_to_position(self.their_base, self.return_false, have_flag=False)
-            self.go_to_position(self.my_base, self.return_false, have_flag=True)
+            self.go_to_position(self.their_base, self.their_base_px, self.return_false, have_flag=False)
+            self.go_to_position(self.my_base, self.my_base_px, self.return_false, have_flag=True)
             rate.sleep()
 
 
@@ -130,8 +144,8 @@ class simple_agent(object):
                     start_msg_shown = False
                     game_start_msg_shown = True
                     game_end_msg_shown = False
-                self.go_to_position(self.their_base, self.end_early)
-                self.go_to_position(self.my_base, self.end_early)
+                self.go_to_position(self.their_base, self.their_base_px, self.end_early)
+                self.go_to_position(self.my_base, self.my_base_px, self.end_early)
             elif(self.game_state == 2): # Game Over
                 if (not game_end_msg_shown):
                     print("Game Ended")
@@ -145,12 +159,12 @@ class simple_agent(object):
                     start_msg_shown = False
                     game_start_msg_shown = True
                     game_end_msg_shown = False
-                self.go_to_position(self.their_base, self.end_early)
-                self.go_to_position(self.my_base, self.end_early)
+                self.go_to_position(self.their_base, self.their_base_px, self.end_early)
+                self.go_to_position(self.my_base, self.my_base_px, self.end_early)
 
             rate.sleep()
 
-    def go_to_position(self, target, monitor_function, have_flag = False, allowed_error = 20, dwell_time = 2):
+    def go_to_position(self, target, target_px, monitor_function, have_flag = False, allowed_error = 20, dwell_time = 2):
         '''
         Attempts to get Sphero to go to target position, existing out of loop as soon as it is within allowed error
         :param target:
@@ -160,10 +174,12 @@ class simple_agent(object):
         :param dwell_time:
         :return:
         '''
-        print("Target Location: " + str(target))
 
         if(target is None):
             return False
+
+        print("Target Location: (" + str(target.x) + ", " + str(target.y) + ")")
+        print("Target Pixels  : (" + str(target_px.x) + ", " + str(target_px.y) + ")")
 
         time_center = time.time()
 

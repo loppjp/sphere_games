@@ -148,19 +148,31 @@ class ArenaSetup(object):
         self.pub_sphero_cmd_vel[color].publish(self.yaw_vel_to_twist(0, 0))
 
     def info_messages(self):
-        print("Arena Setup v0.2")
-        print("Please Verify that you are ready to start, for automatic the tracker must be running, and "
-              "both spheros need to be in the arena with space to spare.")
-        if sys.version_info[0] == 3:
-            response = str(input("Ready? (Y/N):")).lower()
-        else:
-            response = raw_input("Ready? (Y/N):").lower()
+        print("Arena Setup v0.3")
+        print("Please Verify that you are ready to start")
 
-        if(not(response == "y" or response == "yes")):
-            exit(0)
+        ready = False
+        if(not ready):
+            if sys.version_info[0] == 3:
+                response = str(input("Ready? (Y/N):")).lower()
+            else:
+                response = raw_input("Ready? (Y/N):").lower()
+
+            if(response == "y" or response == "yes"):
+                ready = True
 
     def set_position(self):
-        print "Resetting Robot Locations"
+        print "Resetting Robot Locations, Verify tracker is correctly centering robots"
+
+        ready = False
+        if (not ready):
+            if sys.version_info[0] == 3:
+                response = str(input("Ready? (Y/N):")).lower()
+            else:
+                response = raw_input("Ready? (Y/N):").lower()
+
+            if (response == "y" or response == "yes"):
+                ready = True
 
         for robot in self.robot_list:
             curr_position = self.arena_center[robot['name']]

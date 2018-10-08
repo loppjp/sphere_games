@@ -25,10 +25,6 @@ class SpheroTracker():
 
         # Put 25pixel fudge on edges - used to ignore points found outside
         # (the fudge factor could be in constants if it needs to change)
-        self.bounds = { 'left': min(self.base['red'].x,self.base['blue'].x)-25,
-                        'right': max(self.base['red'].x,self.base['blue'].x)+25,
-                        'top': min(self.base['red'].y,self.base['blue'].y)-25,
-                        'bottom': max(self.base['red'].y,self.base['blue'].y)+25 }
 
         empty_point = PointStamped()
 
@@ -219,8 +215,8 @@ class SpheroTracker():
 
         for (x,y,r) in circles[0,:]:
             # Only accept point if within bounds of arena
-            if (self.bounds['left'] < x < self.bounds['right']
-              and self.bounds['top'] < y < self.bounds['bottom']):
+            if (constants.ARENA_BOUNDS['left'] < x < constants.ARENA_BOUNDS['right']
+              and constants.ARENA_BOUNDS['top'] < y < constants.ARENA_BOUNDS['bottom']):
                 return Point(x,y,0)
             #else:
             #    print("Ignore %g,%g outside %g..%g, %g..%g" % 
@@ -288,10 +284,10 @@ class SpheroTracker():
         # Extract only arena portion (e.g. zero everything outside arena)
         # (technique from 'stackoverflow.com/questions/11492214')
         extracted = np.zeros(masked_img.shape,np.uint8)
-        extracted[self.bounds['top']:self.bounds['bottom'],
-                  self.bounds['left']:self.bounds['right']] \
-          = masked_img[self.bounds['top']:self.bounds['bottom'],
-                       self.bounds['left']:self.bounds['right']]
+        extracted[constants.ARENA_BOUNDS['top']:constants.ARENA_BOUNDS['bottom'],
+        constants.ARENA_BOUNDS['left']:constants.ARENA_BOUNDS['right']] \
+          = masked_img[constants.ARENA_BOUNDS['top']:constants.ARENA_BOUNDS['bottom'],
+            constants.ARENA_BOUNDS['left']:constants.ARENA_BOUNDS['right']]
         return extracted
 
 
@@ -319,6 +315,7 @@ class SpheroTracker():
             avg.x = avg.x * .8 + pt.x * .2
             avg.y = avg.x * .8 + pt.x * .2
 
+            self.running_average[color] = avg
             self.last_good_value[color] = pt
             self.reset_filter_count[color] = 0
 
@@ -343,7 +340,7 @@ class SpheroTracker():
             self.red_center_mm = self.convert_pixels_mm(red_pt, stamp)
 
         if (not blue_pt is None):
-            blue_pt = self.filter('blue', red_pt)
+            blue_pt = self.filter('blue', blue_pt)
             self.center['blue'] = blue_pt
             self.blue_center_mm = self.convert_pixels_mm(blue_pt, stamp)
 
@@ -445,10 +442,13 @@ class SpheroTracker():
                 self.pub_diff_image.publish(self.diff_image)
 
             # Publish Centers
-            self.pub_red_center.publish(self.center['red'])
-            self.pub_blue_center.publish(self.center['blue'])
-            self.pub_red_center_mm.publish(self.red_center_mm)
-            self.pub_blue_center_mm.publish(self.blue_center_mm)
+            if(self.center['red'] is not None):
+                self.pub_red_center.publish(self.center['red'])
+                self.pub_red_center_mm.publish(self.red_center_mm)
+
+            if (self.center['blue'] is not None):
+                self.pub_blue_center.publish(self.center['blue'])
+                self.pub_blue_center_mm.publish(self.blue_center_mm)
 
             self.pub_red_base.publish(self.base['red'])
             self.pub_blue_base.publish(self.base['blue'])
