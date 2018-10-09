@@ -4,6 +4,7 @@ from std_msgs.msg import Bool, Int16
 from geometry_msgs.msg import Point, PointStamped, Twist, Vector3
 import host.utilities as util
 import time
+from random import randint, choice
 
 class simple_agent(object):
 
@@ -35,7 +36,10 @@ class simple_agent(object):
         self.Ki = .001;
         self.Kd = .1;
 
+        self.cmd_vel = None
         self.MAX_SPEED = 30
+
+        self.stuck = None
 
         self.opponent = opponent
 
@@ -103,6 +107,39 @@ class simple_agent(object):
 
     def return_false(self):
         return False
+
+    def check_if_stuck(self):
+        if(self.cmd_vel is None):
+            return False
+
+        if(self.cmd_vel.linear.x > 0):
+            if(self.my_velocity.point.x == 0 and self.my_velocity.point.y == 0):
+                curr_time = time.time()
+                if(self.stuck is None):
+                    self.stuck = curr_time
+                elif(curr_time - self.stuck > 3):
+                    self.stuck = None
+                    return True
+
+        return False
+
+    def do_movement(self, t):
+        self.cmd_vel = t
+        self.pub_cmd_vel.publish(t)
+
+        if(self.check_if_stuck()):
+            direction = choice([0, 90, 180, 270])
+
+            print("Stuck! Trying to get unstuck, heading: " + str(direction))
+
+            t = Twist()
+            t.linear = Vector3(50,0,0)
+            t.angular = Vector3(0,0,direction)
+
+            self.cmd_vel = t
+            self.pub_cmd_vel.publish(t)
+
+            rospy.sleep(2)
 
     def test_game(self):
         rate = rospy.Rate(1)
@@ -254,7 +291,9 @@ class simple_agent(object):
                     t = Twist()
                     t.linear = Vector3(0, 0, 0)
                     t.angular = Vector3(0, 0, err_heading)
-                    self.pub_cmd_vel.publish(t)
+
+                    self.do_movement(t)
+
                     at_goal = True
                     time_center = time.time()
                     rate.sleep()
@@ -281,7 +320,7 @@ class simple_agent(object):
             t = Twist()
             t.linear = Vector3(vel, 0, 0)
             t.angular = Vector3(0, 0, err_heading)
-            self.pub_cmd_vel.publish(t)
+            self.do_movement(t)
 
             rate.sleep()
 

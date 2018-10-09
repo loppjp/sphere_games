@@ -349,12 +349,12 @@ class SpheroTracker():
 
         # Return Sphero locations
         if(not red_pt is None):
-            red_pt = self.filter('red', red_pt)
+            #red_pt = self.filter('red', red_pt)
             self.center['red'] = red_pt
             self.red_center_mm = self.convert_pixels_mm(red_pt, stamp)
 
         if (not blue_pt is None):
-            blue_pt = self.filter('blue', blue_pt)
+            #blue_pt = self.filter('blue', blue_pt)
             self.center['blue'] = blue_pt
             self.blue_center_mm = self.convert_pixels_mm(blue_pt, stamp)
 

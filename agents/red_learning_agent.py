@@ -3,7 +3,8 @@ import os
 import numpy as np
 import rospy
 from std_msgs.msg import Bool, Int16
-from geometry_msgs.msg import Twist, Point, Vector3
+from geometry_msgs.msg import Twist, Point, PointStamped, Vector3
+import host.utilities as util
 
 # Global variables
 red_center = Point()
@@ -21,7 +22,7 @@ vel_actions = np.array(list(range(1, 2))) * 25 # One speed
 # Helper functions
 def set_center(sphere_center):
     global red_center
-    red_center = sphere_center
+    red_center = util.mm_2_pixel(sphere_center.point)
     return
 
 def set_flag(flag_status):
@@ -149,7 +150,7 @@ def learning_agent():
     rospy.init_node('red_agent', anonymous=True)
 
     pub_red_cmd = rospy.Publisher('/red_sphero/cmd_vel', Twist, queue_size=1)
-    sub_red_center = rospy.Subscriber('/red_sphero/center', Point, set_center, queue_size=1)
+    sub_red_center = rospy.Subscriber('/red_sphero/odometry', PointStamped, set_center, queue_size=1)
     sub_red_flag = rospy.Subscriber('/red_sphero/flag', Bool, set_flag, queue_size=1)
     sub_blue_base = rospy.Subscriber('/arena/blue_sphero/base', Point, set_blue_base, queue_size=1)
     sub_red_base = rospy.Subscriber('/arena/red_sphero/base', Point, set_red_base, queue_size=1)
