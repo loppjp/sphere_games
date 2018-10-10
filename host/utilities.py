@@ -1,7 +1,21 @@
 import cv2
 import constants
 import numpy as np
+from geometry_msgs.msg import Point
 
+def pixels_2_mm(pt_px):
+    x = (pt_px.x - constants.ORIGIN_PIXELS.x) * constants.COVERT_PIXEL2MM
+    y = -1 * ((pt_px.y - constants.ORIGIN_PIXELS.y) * constants.COVERT_PIXEL2MM)
+    z = (constants.ORIGIN_PIXELS.z - pt_px.z) * constants.COVERT_PIXEL2MM
+
+    return Point(int(x),int(y),int(z))
+
+def mm_2_pixel(pt_mm):
+    x =  constants.ORIGIN_PIXELS.x + (pt_mm.x * constants.COVERT_MM2PIXEL)
+    y =  constants.ORIGIN_PIXELS.y - (pt_mm.y * constants.COVERT_MM2PIXEL)
+    z =  constants.ORIGIN_PIXELS.z + (pt_mm.z * constants.COVERT_MM2PIXEL)
+
+    return Point(int(x),int(y),int(z))
 
 def calculate_distance(start, end):
     if(start is None):
@@ -74,6 +88,15 @@ def update_arena(game_state, time_elapsed, score, center, base, flag, img):
                 fontColor,
                 lineType)
 
+    if(time_elapsed is None):
+        time_elapsed = 0
+
+    # Valid Game Area
+    cv2.rectangle(arena_img,
+                  (constants.ARENA_BOUNDS['left'], constants.ARENA_BOUNDS['top']), (constants.ARENA_BOUNDS['right'], constants.ARENA_BOUNDS['bottom']),
+                  (255, 255, 255))
+
+
     # Time Remaining
     cv2.putText(arena_img, 'Time Remaining: ' + str(constants.TOTAL_ALLOWED_TIME - time_elapsed) + ' s',
                 (10, 910),
@@ -82,15 +105,25 @@ def update_arena(game_state, time_elapsed, score, center, base, flag, img):
                 fontColor,
                 lineType)
 
+    if(center['red'] is not None):
+        red_position = 'Red (' + str(int(center['red'].x)) + ', ' + str(int(center['red'].y)) + ')'
+    else:
+        red_position = "Red not found"
+
     # Position Information
-    cv2.putText(arena_img, 'Red (' + str(center['red'].x) + ', ' + str(center['red'].y) + ')',
+    cv2.putText(arena_img, red_position,
                 (1000, 40),
                 font,
                 fontScale,
                 (0, 0, 255),
                 lineType)
 
-    cv2.putText(arena_img, 'Blue (' + str(center['blue'].x) + ', ' + str(center['blue'].y) + ')',
+    if (center['blue'] is not None):
+        blue_position = 'Blue (' + str(int(center['blue'].x)) + ', ' + str(int(center['blue'].y)) + ')'
+    else:
+        blue_position = "Blue not found"
+
+    cv2.putText(arena_img, blue_position,
                 (600, 40),
                 font,
                 fontScale,
@@ -116,29 +149,28 @@ def update_arena(game_state, time_elapsed, score, center, base, flag, img):
     cv2.circle(arena_img, (constants.ORIGIN_PIXELS.x, constants.ORIGIN_PIXELS.y), 3, (255, 255, 255), -1)
 
     # Sphero Locations
-    if (flag['red']):
-        thickness = -1
-    else:
-        thickness = 2
+    if(center['red'] is not None):
+        cv2.circle(arena_img, (int(center['red'].x), int(center['red'].y)), 10, (0, 0, 255), thickness=2)
 
-    cv2.circle(arena_img, (center['red'].x, center['red'].y), 10, (0, 0, 255), thickness=thickness)
+        if (flag['red']):
+            cv2.circle(arena_img, (int(center['red'].x), int(center['red'].y)), 8, (255, 0, 0), thickness=-1)
 
-    if (flag['blue']):
-        thickness = -1
-    else:
-        thickness = 2
+    if(center['blue'] is not None):
+        cv2.circle(arena_img, (int(center['blue'].x), int(center['blue'].y)), 10, (255, 0, 0), thickness=2)
 
-    cv2.circle(arena_img, (center['blue'].x, center['blue'].y), 10, (255, 0, 0), thickness=thickness)
+        if (flag['blue']):
+            cv2.circle(arena_img, (int(center['blue'].x), int(center['blue'].y)), 8, (0, 0, 255), thickness=-1)
+
 
     # Base Locations
-    if (not flag['red']):
+    if (not flag['blue']):
         thickness = -1
     else:
         thickness = 2
 
     cv2.circle(arena_img, (base['red'].x, base['red'].y), 10, (0, 0, 255), thickness=thickness)
 
-    if (not flag['blue']):
+    if (not flag['red']):
         thickness = -1
     else:
         thickness = 2
