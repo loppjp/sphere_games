@@ -69,16 +69,14 @@ namespace gazebo
     public: void OnRosMsgTwist(const geometry_msgs::Twist::ConstPtr& _msg)
     {
       // Get message information
-      double x_vel = _msg->angular.x;
-      double y_vel = _msg->angular.y;
-      std::cerr << "\n[" << model->GetName() << "] vel[x, y] set to " << 
-        x_vel << ", " << y_vel << "\n";
-      // Adjust x and y velocities based on heading (yaw)
-      x_vel = x_vel * cos(this->yaw) - y_vel * sin(this->yaw);
-      y_vel = y_vel * cos(this->yaw) + x_vel * sin(this->yaw);
+      double vel = _msg->linear.x;
+      double yaw = _msg->angular.z * M_PI / 180;
+      std::cerr << "\n[" << model->GetName() << "] vel set to " << 
+        vel << ", heading set to " << yaw << "\n";
+      // Adjust x and y velocities based on heading (yaw) and drift
+      double x_vel = vel * cos(yaw + this->drift);
+      double y_vel = vel * sin(yaw + this->drift);
       this->model->SetAngularVel(ignition::math::Vector3d(x_vel, y_vel, 0)); 
-      // this->model->SetAngularVel(ignition::math::Vector3d(_msg->angular.x, 
-      //                           _msg->angular.y, 0));
     }
     
     /// \brief Handle an incoming message from ROS
@@ -86,11 +84,9 @@ namespace gazebo
     /// angle of the Sphere.
     public: void OnRosMsgHeading(const std_msgs::Float32::ConstPtr& _msg)
     {
-      this->yaw = this->yaw + _msg->data * M_PI / 180;
+      this->drift = this->drift + _msg->data * M_PI / 180;
       std::cerr << "\n[" << model->GetName() << "] heading adjusted by " << 
-        _msg->data << "degrees. New heading is " << this->yaw << "\n";
-      // Since we are using angular.x and angular.y for motion, just 
-      // store the heading update internally in yaw.
+        _msg->data << "degrees. New heading is " << this->drift << "\n";
     }
     
     /// \brief ROS helper function that processes messages
@@ -103,8 +99,9 @@ namespace gazebo
       }
     }
 
-    // Initialize yaw to a random heading
-    private: double yaw = rand() * M_PI / 180;
+    // Initialize drift to a random heading
+    // private: double drift = rand() * M_PI / 180;
+    private: double drift = 0;
 
     // Pointer to the model
     private: physics::ModelPtr model;
