@@ -70,12 +70,12 @@ namespace gazebo
     {
       // Get message information
       double vel = _msg->linear.x;
-      double yaw = _msg->angular.z * M_PI / 180;
+      double yaw = (90 - _msg->angular.z) * M_PI / 180;
       std::cerr << "\n[" << model->GetName() << "] vel set to " << 
         vel << ", heading set to " << yaw << "\n";
       // Adjust x and y velocities based on heading (yaw) and drift
-      double x_vel = vel * cos(yaw + this->drift);
-      double y_vel = vel * sin(yaw + this->drift);
+      double x_vel = 0.5 * vel * cos(yaw + this->drift);
+      double y_vel = 0.5 * vel * sin(yaw + this->drift);
       this->model->SetAngularVel(ignition::math::Vector3d(x_vel, y_vel, 0)); 
     }
     

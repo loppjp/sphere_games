@@ -1,4 +1,5 @@
 import time
+import copy
 
 import numpy as np
 import rospy
@@ -77,10 +78,10 @@ def receive_image(image_data):
 
     # Store previous positions for calculating velocity
     # and velocities for calculating accerlation
-    red_pos_mm_old = red_pos_mm
-    blue_pos_mm_old = blue_pos_mm
-    red_vel_old = red_velocity
-    blue_vel_old = blue_velocity
+    red_pos_mm_old = copy.deepcopy(red_pos_mm)
+    blue_pos_mm_old = copy.deepcopy(blue_pos_mm)
+    red_vel_old = copy.deepcopy(red_velocity)
+    blue_vel_old = copy.deepcopy(blue_velocity)
 
     # Convert camera pixel coordinates to millimeters.
     # Position (0, 0, 0) is at the center of the arena.
@@ -94,11 +95,13 @@ def receive_image(image_data):
     # Calculate current deltas from starting positions, in millimeters
     # In the simulation this is simply the distance from their home base
     red_odometry.header.stamp = rospy.Time.now()
-    red_odometry.point = Point(red_pos_mm.point.x - red_base_mm.x, 
-                               red_pos_mm.point.y - red_base_mm.y, 0)
+    # red_odometry.point = Point(red_pos_mm.point.x - red_base_mm.x, 
+    #                            red_pos_mm.point.y - red_base_mm.y, 0)
+    red_odometry.point = red_pos_mm.point
     blue_odometry.header.stamp = rospy.Time.now()
-    blue_odometry.point = Point(blue_pos_mm.point.x - blue_base_mm.x, 
-                                blue_pos_mm.point.y - blue_base_mm.y, 0)
+    # blue_odometry.point = Point(blue_pos_mm.point.x - blue_base_mm.x, 
+    #                             blue_pos_mm.point.y - blue_base_mm.y, 0)
+    blue_odometry.point = blue_pos_mm.point
 
     red_velocity.header.stamp = rospy.Time.now()
     delta_t = ((red_pos_mm.header.stamp.secs 
