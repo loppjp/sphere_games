@@ -1,5 +1,5 @@
 import cv2
-import constants
+import host.constants as constants
 import numpy as np
 from geometry_msgs.msg import Point
 
@@ -11,9 +11,9 @@ def pixels_2_mm(pt_px):
     return Point(int(x),int(y),int(z))
 
 def mm_2_pixel(pt_mm):
-    x =  constants.ORIGIN_PIXELS.x + (pt_mm.x * constants.COVERT_MM2PIXEL)
-    y =  constants.ORIGIN_PIXELS.y - (pt_mm.y * constants.COVERT_MM2PIXEL)
-    z =  constants.ORIGIN_PIXELS.z + (pt_mm.z * constants.COVERT_MM2PIXEL)
+    x = constants.ORIGIN_PIXELS.x + (pt_mm.x * constants.COVERT_MM2PIXEL)
+    y = constants.ORIGIN_PIXELS.y - (pt_mm.y * constants.COVERT_MM2PIXEL)
+    z = constants.ORIGIN_PIXELS.z + (pt_mm.z * constants.COVERT_MM2PIXEL)
 
     return Point(int(x),int(y),int(z))
 

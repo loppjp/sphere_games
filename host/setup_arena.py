@@ -1,11 +1,12 @@
 import rospy
-from std_msgs.msg import Bool, Int16, String, ColorRGBA
+from std_msgs.msg import Bool, Int16, ColorRGBA
 from geometry_msgs.msg import Point, Twist, Vector3, PointStamped
 import sys
 import socket
 import rosgraph
 
-import utilities as util
+import host.utilities as util
+
 
 class ArenaSetup(object):
 

@@ -4,7 +4,7 @@ import numpy as np
 import rospy
 from std_msgs.msg import Bool, Int16
 from geometry_msgs.msg import Twist, Point, PointStamped, Vector3
-import host.utilities as util
+import utils.arena as util
 
 # Global variables
 red_center = Point()
@@ -100,7 +100,7 @@ def Q_learning():
         Q_value = Q_table[previous_grid][previous_choice]
         Q_table[previous_grid][previous_choice] += reward
 
-    if (np.random.random() < 0.2 
+    if (np.random.random() < 0.2
         or (heading, distance) not in Q_table):
         yaw_choice = np.random.choice(yaw_actions)
         vel_choice = np.random.choice(vel_actions)
@@ -129,7 +129,7 @@ def Q_learning():
     Q_table['previous_grid'] = (heading, distance)
     Q_table['previous_choice'] = (yaw_choice, vel_choice)
 
-    print("Yaw: {}, Vel: {}, Value: {}".format(yaw_choice, vel_choice, 
+    print("Yaw: {}, Vel: {}, Value: {}".format(yaw_choice, vel_choice,
         current_value))
     yaw_choice = -yaw_choice # Switch from camera to world coordinates
     red_twist = yaw_vel_to_twist(yaw_choice, vel_choice)

@@ -23,9 +23,6 @@ class SpheroTracker():
         self.base = {'red':constants.RED_BASE, 'blue': constants.BLUE_BASE}
         self.center = {'red':Point(0, 0, 0), 'blue':Point(0, 0, 0)}
 
-        # Put 25pixel fudge on edges - used to ignore points found outside
-        # (the fudge factor could be in constants if it needs to change)
-
         empty_point = PointStamped()
 
         self.red_center_mm = empty_point
@@ -196,6 +193,7 @@ class SpheroTracker():
 
         return center
 
+
     def get_average_intensity(self, img, circle):
 
         new_img = img.copy()
@@ -212,7 +210,7 @@ class SpheroTracker():
     def find_circles(self, mask):
         circles = cv2.HoughCircles(mask, cv2.HOUGH_GRADIENT, 1, 20,
                                    param1 = 50, param2 = 8,
-                                   minRadius = 0, maxRadius = int(90*constants.COVERT_MM2PIXEL))
+                                   minRadius = 0, maxRadius = int(90 * constants.COVERT_MM2PIXEL))
 
         if(circles is None):
             return None
@@ -231,12 +229,6 @@ class SpheroTracker():
                 if(val > maxVal):
                     maxVal = val
                     pt = Point(x,y,0)
-            #else:
-            #    print("Ignore %g,%g outside %g..%g, %g..%g" % 
-            #        (x,y,self.bounds['left'],self.bounds['right'],
-            #         self.bounds['top'],self.bounds['bottom']))
-
-        return pt
 
     def get_spheros(self, cv2_image):
 
@@ -302,48 +294,6 @@ class SpheroTracker():
           = masked_img[constants.ARENA_BOUNDS['top']:constants.ARENA_BOUNDS['bottom'],
             constants.ARENA_BOUNDS['left']:constants.ARENA_BOUNDS['right']]
         return extracted
-
-
-    def filter(self, color, pt):
-        '''
-        Reject any value that is too far away from recent average values
-        :param color:
-        :param pt:
-        :return:
-        '''
-
-        if(pt is None):
-            return None
-
-        # Set running average if not set to new point
-        if(not color in self.running_average.keys() or self.running_average[color] is None):
-            self.running_average[color] = pt
-            self.last_good_value[color] = pt
-
-        avg = self.running_average[color]
-
-        dist = utilities.calculate_distance(avg, pt)
-
-        if(dist < constants.FILTER_THRESHOLD):
-            avg.x = avg.x * .8 + pt.x * .2
-            avg.y = avg.x * .8 + pt.x * .2
-
-            self.running_average[color] = avg
-            self.last_good_value[color] = pt
-            self.reset_filter_count[color] = 0
-
-            return pt
-        else:
-            self.reset_filter_count[color] = self.reset_filter_count[color] + 1
-
-            if(self.reset_filter_count[color] > 5):
-                self.last_good_value[color] = pt
-                self.reset_filter_count[color] = 0
-                self.running_average[color] = pt
-                print("Reset Filter reference point " + color)
-                return pt
-
-            return self.last_good_value[color]
 
     def update_locations(self, blue_pt, red_pt, stamp):
 
