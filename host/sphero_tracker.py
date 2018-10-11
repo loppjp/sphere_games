@@ -229,6 +229,7 @@ class SpheroTracker():
                 if(val > maxVal):
                     maxVal = val
                     pt = Point(x,y,0)
+        return pt
 
     def get_spheros(self, cv2_image):
 
